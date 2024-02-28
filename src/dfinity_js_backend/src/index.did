@@ -1,0 +1,20 @@
+service: () -> {
+    addIssue: (record {status:text; title:text; projectPhase:text; labels:text; dueDate:text; description:text; assignedMember:text; priority:text}) -> (variant {Ok:record {id:text; status:text; title:text; projectPhase:text; labels:text; dueDate:text; description:text; assignedMember:text; priority:text; comments:text}; Err:variant {PaymentFailed:text; InvalidPayload:text; NotFound:text; PaymentCompleted:text}});
+    addMember: (record {name:text; experience:text; skill:text}) -> (variant {Ok:record {id:text; name:text; experience:text; skill:text}; Err:variant {PaymentFailed:text; InvalidPayload:text; NotFound:text; PaymentCompleted:text}});
+    changeStatus: (text, text) -> (variant {Ok:text; Err:variant {PaymentFailed:text; InvalidPayload:text; NotFound:text; PaymentCompleted:text}});
+    deleteIssue: (text) -> (variant {Ok:text; Err:variant {PaymentFailed:text; InvalidPayload:text; NotFound:text; PaymentCompleted:text}});
+    deleteMember: (text) -> (variant {Ok:text; Err:variant {PaymentFailed:text; InvalidPayload:text; NotFound:text; PaymentCompleted:text}});
+    filterByStatus: (text) -> (vec record {id:text; status:text; title:text; projectPhase:text; labels:text; dueDate:text; description:text; assignedMember:text; priority:text; comments:text}) query;
+    getAllIssuesByProjectPhase: (text) -> (vec record {id:text; status:text; title:text; projectPhase:text; labels:text; dueDate:text; description:text; assignedMember:text; priority:text; comments:text}) query;
+    getComments: (text) -> (text) query;
+    getIssue: (text) -> (variant {Ok:record {id:text; status:text; title:text; projectPhase:text; labels:text; dueDate:text; description:text; assignedMember:text; priority:text; comments:text}; Err:variant {PaymentFailed:text; InvalidPayload:text; NotFound:text; PaymentCompleted:text}}) query;
+    getIssues: () -> (vec record {id:text; status:text; title:text; projectPhase:text; labels:text; dueDate:text; description:text; assignedMember:text; priority:text; comments:text}) query;
+    getIssuesByMember: (text) -> (vec record {id:text; status:text; title:text; projectPhase:text; labels:text; dueDate:text; description:text; assignedMember:text; priority:text; comments:text}) query;
+    getMember: (text) -> (variant {Ok:record {id:text; name:text; experience:text; skill:text}; Err:variant {PaymentFailed:text; InvalidPayload:text; NotFound:text; PaymentCompleted:text}}) query;
+    getMembers: () -> (vec record {id:text; name:text; experience:text; skill:text}) query;
+    getPercentageOfIssues: () -> (text) query;
+    insertComment: (text, text) -> (variant {Ok:text; Err:variant {PaymentFailed:text; InvalidPayload:text; NotFound:text; PaymentCompleted:text}});
+    searchIssues: (text) -> (vec record {id:text; status:text; title:text; projectPhase:text; labels:text; dueDate:text; description:text; assignedMember:text; priority:text; comments:text}) query;
+    updateIssue: (record {id:text; status:text; title:text; projectPhase:text; labels:text; dueDate:text; description:text; assignedMember:text; priority:text; comments:text}) -> (variant {Ok:record {id:text; status:text; title:text; projectPhase:text; labels:text; dueDate:text; description:text; assignedMember:text; priority:text; comments:text}; Err:variant {PaymentFailed:text; InvalidPayload:text; NotFound:text; PaymentCompleted:text}});
+    updateMember: (record {id:text; name:text; experience:text; skill:text}) -> (variant {Ok:record {id:text; name:text; experience:text; skill:text}; Err:variant {PaymentFailed:text; InvalidPayload:text; NotFound:text; PaymentCompleted:text}});
+}
