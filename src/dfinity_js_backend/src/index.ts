@@ -5,10 +5,6 @@ import {
 import { hashCode } from "hashcode";
 import { v4 as uuidv4 } from "uuid";
 
-/**
- * This type represents a product that can be listed on a marketplace.
- * It contains basic properties that are needed to define a product.
- */
 const Issue = Record({
     id: text,
     title: text,
@@ -18,7 +14,7 @@ const Issue = Record({
     priority: text,
     assignedMember: text,
     projectPhase: text,
-    labels: text, // eg Bug, Feature, Enhancements etc
+    labels: text,
     comments: text,
 });
 
@@ -31,9 +27,7 @@ const IssuePayload = Record({
     assignedMember: text,
     projectPhase: text,
     labels: text,
-    // comments: text, comment is "" initial then added when change of project situation
 });
-
 
 const Member = Record({
     id: text,
@@ -48,8 +42,6 @@ const MemberPayload = Record({
     experience: text,
 });
 
-
-
 const Message = Variant({
     NotFound: text,
     InvalidPayload: text,
@@ -57,11 +49,8 @@ const Message = Variant({
     PaymentCompleted: text
 });
 
-
 const issueStorage = StableBTreeMap(0, text, Issue);
 const memberStorage = StableBTreeMap(1, text, Member);
-
-
 
 export default Canister({
     getIssues: query([], Vec(Issue), () => {
@@ -92,8 +81,9 @@ export default Canister({
         if ("None" in issueOpt) {
             return Err({ NotFound: `cannot update the issue: issue with id=${payload.id} not found` });
         }
-        issueStorage.insert(issueOpt.Some.id, payload);
-        return Ok(payload);
+        const updatedIssue = { ...issueOpt.Some, ...payload };
+        issueStorage.insert(updatedIssue.id, updatedIssue);
+        return Ok(updatedIssue);
     }),
 
     deleteIssue: update([text], Result(text, Message), (id) => {
@@ -118,8 +108,9 @@ export default Canister({
         if ("None" in memberOpt) {
             return Err({ NotFound: `cannot update the member: member with id=${payload.id} not found` });
         }
-        memberStorage.insert(memberOpt.Some.id, payload);
-        return Ok(payload);
+        const updatedMember = { ...memberOpt.Some, ...payload };
+        memberStorage.insert(updatedMember.id, updatedMember);
+        return Ok(updatedMember);
     }),
 
     deleteMember: update([text], Result(text, Message), (id) => {
@@ -136,25 +127,20 @@ export default Canister({
             return Err({ NotFound: `member with id=${id} not found` });
         }
         return Ok(memberOpt.Some);
-    }
-    ),
+    }),
 
     filterByStatus: query([text], Vec(Issue), (status) => {
         return issueStorage.values().filter(issue => issue.status.toLowerCase() === status.toLowerCase());
-    }
-    ),
+    }),
 
     getAllIssuesByProjectPhase: query([text], Vec(Issue), (projectPhase) => {
         return issueStorage.values().filter(issue => issue.projectPhase.toLowerCase() === projectPhase.toLowerCase());
-    }
-
-    ),
+    }),
 
     searchIssues: query([text], Vec(Issue), (searchText) => {
         return issueStorage.values().filter(issue => issue.title.toLowerCase().includes(searchText.toLowerCase()
          || issue.description.toLowerCase().includes(searchText.toLowerCase())));
-    } 
-    ),
+    }),
 
     insertComment: update([text, text], Result(text, Message), (id, comment) => {
         const issueOpt = issueStorage.get(id);
@@ -170,54 +156,51 @@ export default Canister({
     getComments: query([text], text, (id) => {
         const issueOpt = issueStorage.get(id);
         if ("None" in issueOpt) {
-            return "issue with id=" + id + " not found";
+            return "";
         }
         return issueOpt.Some.comments;
-    }), 
+    }),
 
     getIssuesByMember: query([text], Vec(Issue), (memberId) => {
         return issueStorage.values().filter(issue => issue.assignedMember.toLowerCase() === memberId.toLowerCase());
     }),
 
-    // get Percentage of issues based on Priority
     getPercentageOfIssues: query([], text, () => {
         const issues = issueStorage.values();
         const totalIssues = issues.length;
+        if (totalIssues === 0) {
+            return "No issues found.";
+        }
         const highPriorityIssues = issues.filter(issue => issue.priority.toLowerCase() === "high").length;
         const mediumPriorityIssues = issues.filter(issue => issue.priority.toLowerCase() === "medium").length;
         const lowPriorityIssues = issues.filter(issue => issue.priority.toLowerCase() === "low").length;
-        return `Total Issues: ${totalIssues.toString()}, High Priority: ${((highPriorityIssues / totalIssues) * 100).toFixed(2).toString()}%, Medium Priority: ${((mediumPriorityIssues / totalIssues) * 100).toFixed(2).toString()}%, Low Priority: ${((lowPriorityIssues / totalIssues) * 100).toFixed(2).toString()}%`;
+        return {
+            totalIssues,
+            highPriority: ((highPriorityIssues / totalIssues) * 100).toFixed(2),
+            mediumPriority: ((mediumPriorityIssues / totalIssues) * 100).toFixed(2),
+            lowPriority: ((lowPriorityIssues / totalIssues) * 100).toFixed(2)
+        };
     }),
 
-    // change the status of the issue
     changeStatus: update([text, text], Result(text, Message), (id, status) => {
         const issueOpt = issueStorage.get(id);
         if ("None" in issueOpt) {
             return Err({ NotFound: `cannot change status: issue with id=${id} not found` });
         }
-        const issue = issueOpt.Some;
-        issue.status = status;
+        const issue = { ...issueOpt.Some, status };
         issueStorage.insert(issue.id, issue);
         return Ok(issue.status);
     }),
-
-
-
-
-   
 });
 
-/*
-    a hash function that is used to generate correlation ids for orders.
-    also, we use that in the verifyPayment function where we check if the used has actually paid the order
-*/
 function hash(input: any): nat64 {
-    return BigInt(Math.abs(hashCode().value(input)));
+    const crypto = require('crypto');
+    const hash = crypto.createHash('sha256');
+    hash.update(JSON.stringify(input));
+    return BigInt(`0x${hash.digest('hex')}`);
 };
 
-// a workaround to make uuid package work with Azle
 globalThis.crypto = {
-    // @ts-ignore
     getRandomValues: () => {
         let array = new Uint8Array(32);
 
@@ -228,4 +211,3 @@ globalThis.crypto = {
         return array;
     }
 };
-
